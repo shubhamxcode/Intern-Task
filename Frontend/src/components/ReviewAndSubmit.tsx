@@ -263,29 +263,7 @@ Generated with ❤️ by TestCraft AI`;
               </div>
             </div>
 
-            <div className="flex space-x-3 justify-center">
-              <a
-                href={createdPR.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
-              >
-                <GitPullRequest className="w-5 h-5 mr-2" />
-                View Pull Request on GitHub
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </a>
-              {createdPR.diffUrl && (
-                <a
-                  href={createdPR.diffUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
-                >
-                  View Diff
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </a>
-              )}
-            </div>
+
           </div>
 
           <div className="flex justify-center space-x-4">
