@@ -1,85 +1,90 @@
 import React from 'react';
-import { Check } from 'lucide-react';
 import { useAppStore } from '../context/useAppStore';
-
-const steps = [
-  { id: 'repositories', name: 'Select Repository', description: 'Choose a repository' },
-  { id: 'files', name: 'Select Files', description: 'Pick code files' },
-  { id: 'summaries', name: 'Test Summaries', description: 'Review test ideas' },
-  { id: 'tests', name: 'Generate Tests', description: 'Create test code' },
-  { id: 'review', name: 'Review & Submit', description: 'Create pull request' },
-];
+import { Check } from 'lucide-react';
 
 const StepIndicator: React.FC = () => {
   const { currentStep } = useAppStore();
 
-  const getCurrentStepIndex = () => {
-    return steps.findIndex(step => step.id === currentStep);
+  const steps = [
+    { id: 1, key: 'repositories', title: 'Repository', description: 'Select repo' },
+    { id: 2, key: 'files', title: 'Files', description: 'Choose files' },
+    { id: 3, key: 'summaries', title: 'Analysis', description: 'AI review' },
+    { id: 4, key: 'tests', title: 'Tests', description: 'Generate code' },
+    { id: 5, key: 'review', title: 'Review', description: 'Create PR' }
+  ];
+
+  const stepKeyToNumber: Record<string, number> = {
+    'repositories': 1,
+    'files': 2,
+    'summaries': 3,
+    'tests': 4,
+    'review': 5
   };
 
-  const getStepStatus = (stepIndex: number) => {
-    const currentIndex = getCurrentStepIndex();
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
+  const getStepStatus = (stepId: number) => {
+    const currentNum = stepKeyToNumber[currentStep] || 1;
+    if (stepId < currentNum) return 'completed';
+    if (stepId === currentNum) return 'current';
     return 'upcoming';
   };
 
   return (
-    <nav aria-label="Progress">
-      <ol className="flex items-center">
-        {steps.map((step, stepIndex) => {
-          const status = getStepStatus(stepIndex);
-          const isLast = stepIndex === steps.length - 1;
-
+    <div className="w-full">
+      <div className="flex items-center justify-between">
+        {steps.map((step, index) => {
+          const status = getStepStatus(step.id);
+          
           return (
-            <li key={step.id} className={`relative ${!isLast ? 'pr-8 sm:pr-20' : ''}`}>
-              {/* Connector Line */}
-              {!isLast && (
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div
-                    className={`h-0.5 w-full ${
-                      status === 'completed' ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  />
+            <React.Fragment key={step.id}>
+              <div className="flex flex-col items-center text-center">
+                {/* Step Circle */}
+                <div className={`
+                  flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium
+                  ${status === 'completed' 
+                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    : status === 'current'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-400'
+                  }
+                `}>
+                  {status === 'completed' ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    step.id
+                  )}
                 </div>
-              )}
-
-              {/* Step Circle */}
-              <div className="relative flex items-center justify-center">
-                {status === 'completed' ? (
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
+                
+                {/* Step Info */}
+                <div className="mt-2">
+                  <div className={`text-xs font-medium
+                    ${status === 'current' || status === 'completed'
+                      ? 'text-gray-900' 
+                      : 'text-gray-500'
+                    }
+                  `}>
+                    {step.title}
                   </div>
-                ) : status === 'current' ? (
-                  <div className="h-8 w-8 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center">
-                    <div className="h-2.5 w-2.5 bg-blue-600 rounded-full" />
-                  </div>
-                ) : (
-                  <div className="h-8 w-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center">
-                    <div className="h-2.5 w-2.5 bg-gray-300 rounded-full" />
-                  </div>
-                )}
-
-                {/* Step Labels */}
-                <div className="absolute top-10 text-center">
-                  <div
-                    className={`text-sm font-medium ${
-                      status === 'current' ? 'text-blue-600' : 
-                      status === 'completed' ? 'text-gray-900' : 'text-gray-500'
-                    }`}
-                  >
-                    {step.name}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-400 mt-1">
                     {step.description}
                   </div>
                 </div>
               </div>
-            </li>
+
+              {/* Connector Line */}
+              {index < steps.length - 1 && (
+                <div className="flex-1 h-px mx-4 bg-gray-200 relative">
+                  <div 
+                    className={`h-full ${
+                      step.id < (stepKeyToNumber[currentStep] || 1) ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}
+                  />
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
-      </ol>
-    </nav>
+      </div>
+    </div>
   );
 };
 

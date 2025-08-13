@@ -1,8 +1,17 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
 
-// API base configuration
+// API base configuration with validation
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+// Validate environment variables
+if (import.meta.env.DEV) {
+  console.log('API Configuration:', {
+    baseUrl: API_BASE_URL,
+    callbackUrl: import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL,
+    environment: import.meta.env.MODE
+  });
+}
 
 class ApiService {
   private api: AxiosInstance;
@@ -45,10 +54,18 @@ class ApiService {
         // Handle specific error codes
         if (error.response?.status === 401) {
           // Unauthorized - clear token and redirect to login
+          console.warn('Token expired or invalid, clearing auth data');
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_data');
-          window.location.href = '/';
-          toast.error('Session expired. Please log in again.');
+          sessionStorage.removeItem('github_oauth_state');
+          
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/') {
+            window.location.href = '/';
+          }
+          
+          const errorMsg = error.response?.data?.message || 'Session expired. Please log in again.';
+          toast.error(errorMsg);
         } else if (error.response?.status === 429) {
           toast.error('Too many requests. Please wait a moment.');
         } else if (error.response?.status >= 500) {
@@ -70,17 +87,17 @@ class ApiService {
     return response.data;
   }
 
-  async handleGitHubCallback(code: string, state?: string): Promise<{ token: string; user: any }> {
+  async handleGitHubCallback(code: string, state?: string): Promise<{ success: boolean; token: string; user: any; message?: string }> {
     const response = await this.api.post('/auth/github/callback', { code, state });
     return response.data;
   }
 
-  async verifyToken(): Promise<{ user: any }> {
+  async verifyToken(): Promise<{ success: boolean; user: any; message?: string }> {
     const response = await this.api.get('/auth/verify');
     return response.data;
   }
 
-  async refreshUser(accessToken: string): Promise<{ token: string; user: any }> {
+  async refreshUser(accessToken: string): Promise<{ success: boolean; token: string; user: any; message?: string }> {
     const response = await this.api.post('/auth/refresh', { accessToken });
     return response.data;
   }

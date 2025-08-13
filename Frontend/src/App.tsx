@@ -1,6 +1,6 @@
 
 
-import  { useEffect } from 'react';
+import  { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './context/useAuthStore';
@@ -12,15 +12,26 @@ import './App.css';
 
 function App() {
   const { isAuthenticated, isLoading, initializeAuth } = useAuthStore();
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
-    initializeAuth();
+    console.log('Initializing auth...');
+    initializeAuth().catch(error => {
+      console.error('Auth initialization failed:', error);
+      setInitError(error.message || 'Failed to initialize authentication');
+    });
   }, [initializeAuth]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Initializing application...</p>
+          {initError && (
+            <p className="mt-2 text-red-600 text-sm">Error: {initError}</p>
+          )}
+        </div>
       </div>
     );
   }

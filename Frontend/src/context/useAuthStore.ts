@@ -32,6 +32,7 @@ interface AuthState {
   loginWithGitHub: () => Promise<void>;
   handleGitHubCallback: (code: string, state?: string) => Promise<void>;
   refreshUserData: () => Promise<void>;
+  clearAuthData: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -72,9 +73,18 @@ export const useAuthStore = create<AuthState>()(
           const userData = localStorage.getItem('user_data');
           
           if (token && userData) {
-            // Verify token is still valid
+            // Verify token is still valid with timeout
             try {
-              await apiService.verifyToken();
+              // Add timeout to prevent hanging
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Token verification timeout')), 5000)
+              );
+              
+              await Promise.race([
+                apiService.verifyToken(),
+                timeoutPromise
+              ]);
+              
               const user = JSON.parse(userData);
               set({
                 user,
@@ -83,7 +93,8 @@ export const useAuthStore = create<AuthState>()(
                 isLoading: false,
               });
             } catch (error) {
-              // Token is invalid, clear storage
+              console.warn('Token verification failed, clearing auth:', error);
+              // Token is invalid or verification failed, clear storage
               localStorage.removeItem('auth_token');
               localStorage.removeItem('user_data');
               set({
@@ -98,7 +109,15 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error('Auth initialization error:', error);
-          set({ isLoading: false });
+          // Clear any potentially corrupted data
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
       },
 
@@ -109,7 +128,21 @@ export const useAuthStore = create<AuthState>()(
           const redirectUri = import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL || 
                              `${window.location.origin}/auth/github/callback`;
           
-          const { authUrl, state } = await apiService.getGitHubAuthUrl(redirectUri);
+          // Add timeout for OAuth URL request
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('OAuth URL request timeout')), 10000)
+          );
+          
+          const response = await Promise.race([
+            apiService.getGitHubAuthUrl(redirectUri),
+            timeoutPromise
+          ]);
+          
+          const { authUrl, state } = response as { authUrl: string; state: string };
+          
+          if (!authUrl || !state) {
+            throw new Error('Invalid OAuth response from server');
+          }
           
           // Store state for verification
           sessionStorage.setItem('github_oauth_state', state);
@@ -119,7 +152,8 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('GitHub login error:', error);
           set({ isLoading: false });
-          throw error;
+          // Re-throw with more context
+          throw new Error(`GitHub login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       },
 
@@ -169,6 +203,19 @@ export const useAuthStore = create<AuthState>()(
           get().logout();
           throw error;
         }
+      },
+
+      clearAuthData: () => {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        sessionStorage.removeItem('github_oauth_state');
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+        console.log('Authentication data cleared');
       },
     }),
     {
