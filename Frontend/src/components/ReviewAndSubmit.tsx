@@ -123,7 +123,21 @@ Generated with ❤️ by TestCraft AI`;
       );
 
       setCreatedPR(response.pullRequest);
-      toast.success('Pull request created successfully!');
+      
+      // Enhanced success message with details
+      toast.success(
+        `🎉 Pull Request #${response.pullRequest.number} created successfully!\n` +
+        `📂 ${generatedTests.length} test file${generatedTests.length !== 1 ? 's' : ''} added\n` +
+        `🔗 Click "View Pull Request" to review on GitHub`,
+        {
+          duration: 6000,
+          style: {
+            maxWidth: '400px',
+            fontSize: '14px',
+            lineHeight: '1.4'
+          }
+        }
+      );
     } catch (error: any) {
       console.error('❌ Pull request creation failed:', error);
       
@@ -182,13 +196,26 @@ Generated with ❤️ by TestCraft AI`;
       <div className="p-8">
         <div className="text-center py-12">
           <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-6" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Pull Request Created Successfully!
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            🎉 Pull Request Created Successfully!
           </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Your test cases have been successfully added to a new pull request. 
+          <p className="text-gray-600 mb-4 max-w-2xl mx-auto">
+            Your AI-generated test cases have been successfully added to a new pull request. 
             You can now review, modify, or merge the changes on GitHub.
           </p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 max-w-2xl mx-auto mb-8">
+            <div className="flex items-center justify-center space-x-6 text-sm">
+              <div className="text-green-700">
+                <span className="font-semibold">📊 {generatedTests.length}</span> test file{generatedTests.length !== 1 ? 's' : ''} created
+              </div>
+              <div className="text-green-700">
+                <span className="font-semibold">📝 {totalLinesOfCode}</span> lines of code added
+              </div>
+              <div className="text-green-700">
+                <span className="font-semibold">🚀 PR #{createdPR.number}</span> ready for review
+              </div>
+            </div>
+          </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-2xl mx-auto mb-8">
             <div className="flex items-center mb-4">
@@ -214,15 +241,29 @@ Generated with ❤️ by TestCraft AI`;
               </div>
             </div>
 
-            <a
-              href={createdPR.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              View Pull Request
-              <ExternalLink className="w-4 h-4 ml-2" />
-            </a>
+            <div className="flex space-x-3 justify-center">
+              <a
+                href={createdPR.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+              >
+                <GitPullRequest className="w-5 h-5 mr-2" />
+                View Pull Request on GitHub
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </a>
+              {createdPR.diffUrl && (
+                <a
+                  href={createdPR.diffUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                >
+                  View Diff
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-center space-x-4">
