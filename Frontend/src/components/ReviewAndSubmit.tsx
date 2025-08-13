@@ -100,6 +100,28 @@ Generated with ❤️ by TestCraft AI`;
     }
   }, [generatedTests, selectedFiles, testSummaries]);
 
+  // DEBUG: Let's log everything to understand what data we have
+  React.useEffect(() => {
+    console.log('=== REVIEW AND SUBMIT DEBUG ===');
+    console.log('Full store state:');
+    console.log('- selectedRepository:', selectedRepository);
+    console.log('- selectedFiles:', selectedFiles);
+    console.log('- testSummaries:', testSummaries);
+    console.log('- generatedTests:', generatedTests);
+    console.log('- selectedSummaries:', selectedSummaries);
+    
+    if (generatedTests.length > 0) {
+      console.log('First generated test detailed:');
+      const firstTest = generatedTests[0];
+      console.log('- fileName:', firstTest.fileName);
+      console.log('- framework:', firstTest.framework);
+      console.log('- testSummary:', firstTest.testSummary);
+      console.log('- testSummary.title:', firstTest.testSummary?.title);
+      console.log('- testSummary.description:', firstTest.testSummary?.description);
+      console.log('- content length:', firstTest.content?.length);
+    }
+  }, [selectedRepository, selectedFiles, testSummaries, generatedTests, selectedSummaries]);
+
   const handleCreatePR = async () => {
     if (!user?.accessToken || !selectedRepository || generatedTests.length === 0) {
       toast.error('Missing required data for PR creation');
@@ -278,28 +300,6 @@ Generated with ❤️ by TestCraft AI`;
       </div>
     );
   }
-
-  // DEBUG: Let's log everything to understand what data we have
-  React.useEffect(() => {
-    console.log('=== REVIEW AND SUBMIT DEBUG ===');
-    console.log('Full store state:');
-    console.log('- selectedRepository:', selectedRepository);
-    console.log('- selectedFiles:', selectedFiles);
-    console.log('- testSummaries:', testSummaries);
-    console.log('- generatedTests:', generatedTests);
-    console.log('- selectedSummaries:', selectedSummaries);
-    
-    if (generatedTests.length > 0) {
-      console.log('First generated test detailed:');
-      const firstTest = generatedTests[0];
-      console.log('- fileName:', firstTest.fileName);
-      console.log('- framework:', firstTest.framework);
-      console.log('- testSummary:', firstTest.testSummary);
-      console.log('- testSummary.title:', firstTest.testSummary?.title);
-      console.log('- testSummary.description:', firstTest.testSummary?.description);
-      console.log('- content length:', firstTest.content?.length);
-    }
-  }, [selectedRepository, selectedFiles, testSummaries, generatedTests, selectedSummaries]);
 
   // Safety check for empty or undefined generatedTests
   if (!generatedTests || generatedTests.length === 0) {
