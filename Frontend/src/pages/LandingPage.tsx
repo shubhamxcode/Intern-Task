@@ -68,7 +68,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative scroll-smooth">
       {/* Animated background grid */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -131,7 +131,7 @@ const LandingPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-12">
         <div className="text-center mb-20">
           <div className="inline-block px-4 py-2 bg-slate-800/60 rounded-full border border-slate-600/40 mb-6">
             <span className="text-slate-300 text-sm font-medium">✨ Powered by Advanced AI</span>
@@ -243,12 +243,16 @@ const LandingPage = () => {
       </main>
 
       {/* Text Reveal Section */}
-      <TextReveal className="bg-slate-950/80">
-        Experience the future of testing. Our AI understands your code patterns, anticipates edge cases, and generates comprehensive test suites that catch bugs before they reach production. Join thousands of developers who trust TestCraft to deliver bulletproof applications with confidence.
-      </TextReveal>
+      <section className="relative">
+        <div className="h-16 bg-gradient-to-b from-slate-950 to-slate-950/90"></div>
+        <TextReveal className="bg-gradient-to-br from-slate-950/90 to-slate-900/90">
+          Experience the future of testing. Our AI understands your code patterns, anticipates edge cases, and generates comprehensive test suites that catch bugs before they reach production. Join thousands of developers who trust TestCraft to deliver bulletproof applications with confidence.
+        </TextReveal>
+        <div className="h-16 bg-gradient-to-b from-slate-900/90 to-slate-950"></div>
+      </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-700/40 py-12 bg-slate-900/40 backdrop-blur-sm">
+      <footer className="relative z-10 border-t border-slate-700/40 py-16 bg-slate-900/40 backdrop-blur-sm mt-8">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Code className="w-5 h-5 text-slate-400" />
