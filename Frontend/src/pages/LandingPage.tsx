@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Github, Zap, Code, GitPullRequest, Star, ArrowRight, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../context/useAuthStore';
+import { MorphingText } from '../components/magicui/morphing-text';
+import { TextReveal } from '../components/magicui/text-reveal';
 
 const LandingPage = () => {
   const { loginWithGitHub, isLoading: authLoading } = useAuthStore();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [animatedText, setAnimatedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const fullText = "Generate test cases with AI";
+  const morphingTexts = [
+    "Generate test cases with AI",
+    "Ship with confidence",
+    "Test smarter, not harder",
+    "AI-powered testing",
+    "Automate your testing"
+  ];
 
   // Mouse tracking for interactive background
   useEffect(() => {
@@ -19,16 +25,7 @@ const LandingPage = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Typing animation
-  useEffect(() => {
-    if (currentIndex < fullText.length) {
-      const timeout = setTimeout(() => {
-        setAnimatedText(fullText.slice(0, currentIndex + 1));
-        setCurrentIndex(currentIndex + 1);
-      }, 80);
-      return () => clearTimeout(timeout);
-    }
-  }, [currentIndex, fullText]);
+
 
   const handleLogin = async () => {
     try {
@@ -140,12 +137,12 @@ const LandingPage = () => {
             <span className="text-slate-300 text-sm font-medium">✨ Powered by Advanced AI</span>
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-black mb-8 leading-tight">
-            <span className="block bg-gradient-to-r from-white via-slate-100 to-slate-200 bg-clip-text text-transparent">
-              {animatedText}
-            </span>
-            <span className="animate-pulse">|</span>
-          </h1>
+          <div className="mb-8">
+            <MorphingText 
+              texts={morphingTexts}
+              className="text-6xl md:text-7xl font-black leading-tight bg-gradient-to-r from-white via-slate-100 to-slate-200 bg-clip-text text-transparent"
+            />
+          </div>
           
           <p className="text-xl md:text-2xl text-slate-300 mb-12 max-w-3xl mx-auto leading-relaxed">
             Transform your development workflow with intelligent test generation. 
@@ -244,6 +241,11 @@ const LandingPage = () => {
           </pre>
         </div>
       </main>
+
+      {/* Text Reveal Section */}
+      <TextReveal className="bg-slate-950/80">
+        Experience the future of testing. Our AI understands your code patterns, anticipates edge cases, and generates comprehensive test suites that catch bugs before they reach production. Join thousands of developers who trust TestCraft to deliver bulletproof applications with confidence.
+      </TextReveal>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-700/40 py-12 bg-slate-900/40 backdrop-blur-sm">
