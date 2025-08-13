@@ -39,32 +39,34 @@ const StepIndicator: React.FC = () => {
               <div className="flex flex-col items-center text-center">
                 {/* Step Circle */}
                 <div className={`
-                  flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium
+                  flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 text-sm font-bold transition-all duration-300 shadow-lg
                   ${status === 'completed' 
-                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 border-green-500 text-white shadow-green-500/25' 
                     : status === 'current'
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-400'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-500 text-white shadow-blue-500/25 scale-110'
+                    : 'bg-white border-gray-300 text-gray-400 shadow-gray-200/50'
                   }
                 `}>
                   {status === 'completed' ? (
-                    <Check className="w-4 h-4" />
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                   ) : (
                     step.id
                   )}
                 </div>
                 
                 {/* Step Info */}
-                <div className="mt-2">
-                  <div className={`text-xs font-medium
-                    ${status === 'current' || status === 'completed'
-                      ? 'text-gray-900' 
+                <div className="mt-3 sm:mt-4">
+                  <div className={`text-xs sm:text-sm font-semibold transition-colors duration-300
+                    ${status === 'current' 
+                      ? 'text-blue-700' 
+                      : status === 'completed'
+                      ? 'text-green-700'
                       : 'text-gray-500'
                     }
                   `}>
                     {step.title}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-xs text-gray-500 mt-1 hidden sm:block">
                     {step.description}
                   </div>
                 </div>
@@ -72,10 +74,14 @@ const StepIndicator: React.FC = () => {
 
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 h-px mx-4 bg-gray-200 relative">
+                <div className="flex-1 h-0.5 mx-2 sm:mx-4 bg-gray-200 relative rounded-full overflow-hidden">
                   <div 
-                    className={`h-full ${
-                      step.id < (stepKeyToNumber[currentStep] || 1) ? 'bg-blue-600' : 'bg-gray-200'
+                    className={`h-full transition-all duration-500 ease-in-out ${
+                      step.id < (stepKeyToNumber[currentStep] || 1) 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 w-full' 
+                        : step.id === (stepKeyToNumber[currentStep] || 1)
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 w-1/2'
+                        : 'bg-gray-200 w-0'
                     }`}
                   />
                 </div>

@@ -2,28 +2,30 @@ import React from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
-  color?: string;
+  color?: 'blue' | 'indigo' | 'gray';
   className?: string;
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'md', 
-  color = 'var(--color-primary)',
+  color = 'blue',
   className = '' 
 }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6', 
-    lg: 'w-8 h-8'
+    sm: 'w-4 h-4 border-2',
+    md: 'w-6 h-6 border-2', 
+    lg: 'w-8 h-8 border-2'
+  };
+
+  const colorClasses = {
+    blue: 'border-blue-200 border-t-blue-600',
+    indigo: 'border-indigo-200 border-t-indigo-600',
+    gray: 'border-gray-200 border-t-gray-600'
   };
 
   return (
     <div 
-      className={`loading-spinner ${sizeClasses[size]} ${className}`}
-      style={{ 
-        borderTopColor: color,
-        borderColor: color === 'var(--color-primary)' ? 'var(--color-gray-200)' : 'rgba(0,0,0,0.1)'
-      }}
+      className={`animate-spin rounded-full ${sizeClasses[size]} ${colorClasses[color]} ${className}`}
     />
   );
 };

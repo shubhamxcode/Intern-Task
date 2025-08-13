@@ -1,0 +1,16 @@
+/* Ensure container takes full width and has padding */
+.main-container {
+  width: 100%;
+  max-width: 1280px; /* keeps content centered on large screens */
+  margin: 0 auto;
+  padding: 2rem; /* adds breathing space */
+  box-sizing: border-box;
+}
+
+/* Make background fill the full viewport */
+body {
+  background: #f8f9fa; /* light background */
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden; /* prevents unwanted horizontal scroll */
+}
