@@ -3,10 +3,8 @@ import {
   ArrowLeft, 
   GitPullRequest,
   FileText,
-
   CheckCircle,
   AlertCircle,
-  ExternalLink,
   
 } from 'lucide-react';
 import { useAuthStore } from '../context/useAuthStore';
