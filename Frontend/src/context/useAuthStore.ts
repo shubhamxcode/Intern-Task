@@ -32,7 +32,6 @@ interface AuthState {
   loginWithGitHub: () => Promise<void>;
   handleGitHubCallback: (code: string, state?: string) => Promise<void>;
   refreshUserData: () => Promise<void>;
-  clearAuthData: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -230,18 +229,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      clearAuthData: () => {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        sessionStorage.removeItem('github_oauth_state');
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-        console.log('Authentication data cleared');
-      },
+
     }),
     {
       name: 'auth-store',

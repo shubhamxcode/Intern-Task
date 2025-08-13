@@ -3,7 +3,7 @@ import { Github, Zap, Code, GitPullRequest, Star, ArrowRight, CheckCircle } from
 import { useAuthStore } from '../context/useAuthStore';
 
 const LandingPage = () => {
-  const { loginWithGitHub, isLoading: authLoading, clearAuthData } = useAuthStore();
+  const { loginWithGitHub, isLoading: authLoading } = useAuthStore();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [animatedText, setAnimatedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -253,19 +253,6 @@ const LandingPage = () => {
             <span className="text-lg font-semibold text-slate-300">TestCraft</span>
           </div>
           <p className="text-slate-400">&copy; 2024 TestCraft. Crafted for developers who ship fast.</p>
-          
-          {/* Development Debug Button */}
-          {import.meta.env.DEV && (
-            <div className="mt-4">
-              <button
-                onClick={clearAuthData}
-                className="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                title="Clear authentication data (Development only)"
-              >
-                Clear Auth Data
-              </button>
-            </div>
-          )}
         </div>
       </footer>
 
