@@ -1,6 +1,7 @@
 import axios from 'axios';
 import config from '../config/app.js';
 import { AppError } from '../middlewares/errorHandler.js';
+import mockAiService from './mockAiService.js';
 
 class AIService {
   constructor() {
@@ -58,7 +59,28 @@ Generate 5-10 meaningful test case summaries covering the most important functio
       const response = await this.callAI(prompt);
       return this.parseTestCaseSummaries(response);
     } catch (error) {
-      throw new AppError('Failed to generate test case summaries', 500);
+      console.error('🚨 AI Service Error in generateTestCaseSummaries:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        stack: error.stack
+      });
+      
+      if (error.response?.status === 401) {
+        throw new AppError('Invalid AI API key', 401);
+      } else if (error.response?.status === 429 || error.message.includes('rate limit')) {
+        console.warn('⚠️ AI API rate limit exceeded, falling back to mock service');
+        return mockAiService.generateTestCaseSummaries(files);
+      } else if (error.response?.status === 400) {
+        throw new AppError('Invalid AI API request', 400);
+      } else if (error.message.includes('No AI service configured')) {
+        console.warn('⚠️ No AI service configured, using mock service');
+        return mockAiService.generateTestCaseSummaries(files);
+      } else {
+        console.warn('⚠️ AI service failed, falling back to mock service');
+        return mockAiService.generateTestCaseSummaries(files);
+      }
     }
   }
 
@@ -66,6 +88,11 @@ Generate 5-10 meaningful test case summaries covering the most important functio
    * Generate actual test code for a specific test case
    */
   async generateTestCode(testSummary, fileContent, framework = 'jest') {
+    console.log('🧠 AI Service generating test code:');
+    console.log('- Test summary:', testSummary.title || testSummary.id);
+    console.log('- Framework:', framework);
+    console.log('- File content length:', fileContent?.length);
+    
     try {
       const prompt = `
 You are a senior test engineer. Generate complete, runnable test code based on the following specification:
@@ -99,9 +126,39 @@ Provide the complete test file content with proper file naming convention.
 `;
 
       const response = await this.callAI(prompt);
-      return this.formatTestCode(response, testSummary, framework);
+      console.log('🤖 AI response received, formatting...');
+      
+      const formattedCode = this.formatTestCode(response, testSummary, framework);
+      console.log('✅ Formatted test code:', {
+        fileName: formattedCode.fileName,
+        framework: formattedCode.framework,
+        contentLength: formattedCode.content?.length,
+        preview: formattedCode.content?.substring(0, 100) + '...'
+      });
+      
+      return formattedCode;
     } catch (error) {
-      throw new AppError('Failed to generate test code', 500);
+      console.error('🚨 AI Service Error in generateTestCode:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      if (error.response?.status === 401) {
+        throw new AppError('Invalid AI API key', 401);
+      } else if (error.response?.status === 429 || error.message.includes('rate limit')) {
+        console.warn('⚠️ AI API rate limit exceeded, falling back to mock service');
+        return mockAiService.generateTestCode(testSummary, fileContent, framework);
+      } else if (error.response?.status === 400) {
+        throw new AppError('Invalid AI API request', 400);
+      } else if (error.message.includes('No AI service configured')) {
+        console.warn('⚠️ No AI service configured, using mock service');
+        return mockAiService.generateTestCode(testSummary, fileContent, framework);
+      } else {
+        console.warn('⚠️ AI service failed, falling back to mock service');
+        return mockAiService.generateTestCode(testSummary, fileContent, framework);
+      }
     }
   }
 
@@ -109,13 +166,41 @@ Provide the complete test file content with proper file naming convention.
    * Call the appropriate AI service
    */
   async callAI(prompt) {
-    if (this.preferredProvider === 'openai' && this.openaiApiKey) {
-      return await this.callOpenAI(prompt);
-    } else if (this.geminiApiKey) {
-      return await this.callGemini(prompt);
-    } else {
-      throw new AppError('No AI service configured', 500);
+    console.log('🤖 AI Service Provider Selection:');
+    console.log('- OpenAI available:', !!this.openaiApiKey);
+    console.log('- Gemini available:', !!this.geminiApiKey);
+    console.log('- Preferred provider:', this.preferredProvider);
+    
+    // Try primary provider first
+    try {
+      if (this.preferredProvider === 'openai' && this.openaiApiKey) {
+        console.log('🎯 Trying OpenAI...');
+        return await this.callOpenAI(prompt);
+      } else if (this.geminiApiKey) {
+        console.log('🎯 Trying Gemini...');
+        return await this.callGemini(prompt);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Primary provider (${this.preferredProvider}) failed:`, error.message);
+      
+      // Try fallback provider
+      try {
+        if (this.preferredProvider === 'openai' && this.geminiApiKey) {
+          console.log('🔄 Falling back to Gemini...');
+          return await this.callGemini(prompt);
+        } else if (this.preferredProvider === 'gemini' && this.openaiApiKey) {
+          console.log('🔄 Falling back to OpenAI...');
+          return await this.callOpenAI(prompt);
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback provider also failed:', fallbackError.message);
+        throw fallbackError;
+      }
+      
+      throw error;
     }
+    
+    throw new AppError('No AI service configured or available', 500);
   }
 
   /**
@@ -256,8 +341,7 @@ Provide the complete test file content with proper file naming convention.
     return {
       fileName: testFileName,
       content: code.trim(),
-      framework,
-      testSummary
+      framework
     };
   }
 

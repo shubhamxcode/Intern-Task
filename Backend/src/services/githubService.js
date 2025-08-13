@@ -200,9 +200,64 @@ class GitHubService {
   }
 
   /**
+   * Check if user has write permissions to repository
+   */
+  async checkRepositoryPermissions(accessToken, owner, repo) {
+    try {
+      const response = await axios.get(`${this.baseURL}/repos/${owner}/${repo}`, {
+        headers: {
+          'Authorization': `token ${accessToken}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+
+      const repository = response.data;
+      
+      // Check if the repository allows pull requests
+      if (!repository.permissions?.push && !repository.permissions?.admin) {
+        throw new AppError('Insufficient permissions to create pull request in this repository', 403);
+      }
+      
+      // Check if repository is archived
+      if (repository.archived) {
+        throw new AppError('Cannot create pull request in archived repository', 422);
+      }
+      
+      return repository;
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      if (error.response?.status === 404) {
+        throw new AppError('Repository not found or access denied', 404);
+      }
+      if (error.response?.status === 401) {
+        throw new AppError('Invalid GitHub access token', 401);
+      }
+      throw new AppError('Failed to check repository permissions', 500);
+    }
+  }
+
+  /**
    * Create a pull request
    */
-  async createPullRequest(accessToken, owner, repo, title, body, head, base = 'main') {
+  async createPullRequest(accessToken, owner, repo, title, body, head, base) {
+    // If no base branch specified, get the default branch
+    if (!base) {
+      try {
+        const repoResponse = await axios.get(`${this.baseURL}/repos/${owner}/${repo}`, {
+          headers: {
+            'Authorization': `token ${accessToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        base = repoResponse.data.default_branch;
+        console.log('Using default branch as base:', base);
+      } catch (error) {
+        base = 'main'; // fallback
+        console.log('Could not get default branch, using main as base');
+      }
+    }
     try {
       const response = await axios.post(`${this.baseURL}/repos/${owner}/${repo}/pulls`, {
         title,
@@ -218,13 +273,24 @@ class GitHubService {
 
       return response.data;
     } catch (error) {
+      console.error('Pull request creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
       if (error.response?.status === 422) {
-        throw new AppError('Pull request validation failed', 422);
+        const errorMsg = error.response?.data?.message || 'Pull request validation failed';
+        throw new AppError(`Pull request failed: ${errorMsg}`, 422);
       }
       if (error.response?.status === 401) {
-        throw new AppError('Invalid GitHub access token', 401);
+        throw new AppError('Invalid GitHub access token for pull request', 401);
       }
-      throw new AppError('Failed to create pull request', 500);
+      if (error.response?.status === 403) {
+        throw new AppError('Insufficient permissions to create pull request', 403);
+      }
+      throw new AppError(`Failed to create pull request: ${error.message}`, 500);
     }
   }
 
@@ -233,8 +299,23 @@ class GitHubService {
    */
   async createBranch(accessToken, owner, repo, branchName, fromBranch = 'main') {
     try {
+      // First, try to get the default branch of the repository
+      let defaultBranch = fromBranch;
+      try {
+        const repoResponse = await axios.get(`${this.baseURL}/repos/${owner}/${repo}`, {
+          headers: {
+            'Authorization': `token ${accessToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        defaultBranch = repoResponse.data.default_branch;
+        console.log('Using default branch:', defaultBranch);
+      } catch (error) {
+        console.log('Could not get default branch, using:', fromBranch);
+      }
+
       // Get the SHA of the from branch
-      const branchResponse = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/git/refs/heads/${fromBranch}`, {
+      const branchResponse = await axios.get(`${this.baseURL}/repos/${owner}/${repo}/git/refs/heads/${defaultBranch}`, {
         headers: {
           'Authorization': `token ${accessToken}`,
           'Accept': 'application/vnd.github.v3+json'
@@ -256,13 +337,24 @@ class GitHubService {
 
       return response.data;
     } catch (error) {
+      console.error('Branch creation error:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
       if (error.response?.status === 422) {
-        throw new AppError('Branch already exists or invalid name', 422);
+        const errorMsg = error.response?.data?.message || 'Branch already exists or invalid name';
+        throw new AppError(`Branch creation failed: ${errorMsg}`, 422);
       }
       if (error.response?.status === 401) {
-        throw new AppError('Invalid GitHub access token', 401);
+        throw new AppError('Invalid GitHub access token for branch creation', 401);
       }
-      throw new AppError('Failed to create branch', 500);
+      if (error.response?.status === 403) {
+        throw new AppError('Insufficient permissions to create branch', 403);
+      }
+      throw new AppError(`Failed to create branch: ${error.message}`, 500);
     }
   }
 

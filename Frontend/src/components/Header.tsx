@@ -1,6 +1,7 @@
 import  { useState } from 'react';
 import { LogOut, User, ExternalLink, RefreshCw, Code, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../context/useAuthStore';
+import { useAppStore } from '../context/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -8,17 +9,37 @@ const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, logout, refreshUserData } = useAuthStore();
+  const { reset: resetAppStore } = useAppStore();
   const navigate = useNavigate();
   
   const handleLogout = () => {
     try {
       setIsDropdownOpen(false);
+      
+      // Clear app data first
+      console.log('🧹 Resetting app store...');
+      resetAppStore();
+      
+      // Then logout (which clears auth data)
+      console.log('🚪 Logging out...');
       logout();
-      toast.success('Signed out successfully');
+      
+      toast.success('Signed out successfully - all data cleared');
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Error signing out');
+      toast.error('Error signing out. Please try again.');
+      
+      // Force clear data even if there's an error
+      try {
+        resetAppStore();
+        logout();
+        navigate('/', { replace: true });
+      } catch (forceError) {
+        console.error('Force logout error:', forceError);
+        // Last resort - reload the page to clear everything
+        window.location.href = '/';
+      }
     }
   };
 

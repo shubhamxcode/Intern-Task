@@ -49,29 +49,47 @@ class ApiService {
         return response;
       },
       (error) => {
-        const message = error.response?.data?.error || error.message || 'An error occurred';
         
         // Handle specific error codes
         if (error.response?.status === 401) {
-          // Unauthorized - clear token and redirect to login
-          console.warn('Token expired or invalid, clearing auth data');
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_data');
-          sessionStorage.removeItem('github_oauth_state');
+          // Unauthorized - clear all data and redirect to login
+          console.warn('🚨 Authentication failed - clearing all data');
           
-          // Only redirect if not already on login page
-          if (window.location.pathname !== '/') {
-            window.location.href = '/';
-          }
+          // Clear all storage completely
+          localStorage.clear();
+          sessionStorage.clear();
           
           const errorMsg = error.response?.data?.message || 'Session expired. Please log in again.';
           toast.error(errorMsg);
+          
+          // Delay navigation to let user see the message
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+          
+        } else if (error.response?.status === 403) {
+          const errorMsg = error.response?.data?.message || 'Access denied. Insufficient permissions.';
+          toast.error(errorMsg);
+        } else if (error.response?.status === 404) {
+          const errorMsg = error.response?.data?.message || 'Resource not found.';
+          toast.error(errorMsg);
+        } else if (error.response?.status === 422) {
+          const errorMsg = error.response?.data?.message || 'Invalid request data.';
+          toast.error(errorMsg);
         } else if (error.response?.status === 429) {
-          toast.error('Too many requests. Please wait a moment.');
+          toast.error('Too many requests. Please wait a moment before trying again.');
         } else if (error.response?.status >= 500) {
-          toast.error('Server error. Please try again later.');
+          const errorMsg = error.response?.data?.message || 'Server error. Please try again later.';
+          toast.error(`Server Error: ${errorMsg}`);
+          console.error('🚨 Server Error Details:', error.response?.data);
+        } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+          toast.error('Network error. Please check your internet connection.');
+          console.error('🌐 Network Error:', error);
         } else {
-          toast.error(message);
+          // Generic error handling with more details
+          const errorMsg = error.response?.data?.message || error.message || 'An unexpected error occurred.';
+          toast.error(`Error: ${errorMsg}`);
+          console.error('⚠️ API Error:', error);
         }
 
         return Promise.reject(error);

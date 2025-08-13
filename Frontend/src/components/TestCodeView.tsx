@@ -50,48 +50,93 @@ const TestCodeView: React.FC = () => {
   const [selectedFramework, _setSelectedFramework] = useState('jest');
 
   useEffect(() => {
+    console.log('=== TEST CODE VIEW TRIGGER CHECK ===');
+    console.log('selectedSummaries.length:', selectedSummaries.length);
+    console.log('generatedTests.length:', generatedTests.length);
+    console.log('user?.accessToken exists:', !!user?.accessToken);
+    console.log('selectedRepository exists:', !!selectedRepository);
+    console.log('selectedSummaries:', selectedSummaries);
+    
     if (selectedSummaries.length > 0 && generatedTests.length === 0) {
+      console.log('✅ CONDITIONS MET - Triggering automatic test generation');
       generateTestCode();
+    } else {
+      console.log('❌ CONDITIONS NOT MET for auto test generation:');
+      console.log('- Has summaries:', selectedSummaries.length > 0);
+      console.log('- No existing tests:', generatedTests.length === 0);
     }
   }, [selectedSummaries]);
 
   const generateTestCode = async () => {
+    console.log('=== STARTING TEST CODE GENERATION ===');
+    console.log('Validation checks:');
+    console.log('- user?.accessToken:', !!user?.accessToken);
+    console.log('- selectedRepository:', !!selectedRepository);
+    console.log('- selectedSummaries.length:', selectedSummaries.length);
+    console.log('- selectedFramework:', selectedFramework);
+    
     if (!user?.accessToken || !selectedRepository || selectedSummaries.length === 0) {
+      console.log('❌ VALIDATION FAILED - Missing required data');
+      console.log('Missing:', {
+        accessToken: !user?.accessToken,
+        repository: !selectedRepository,
+        summaries: selectedSummaries.length === 0
+      });
       toast.error('Missing required data for test code generation');
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const response = await apiService.generateMultipleTests(
-        user.accessToken,
-        selectedSummaries,
-        selectedRepository.owner.login,
-        selectedRepository.name,
-        selectedFramework
-      );
+          console.log('✅ VALIDATION PASSED - Starting generation...');
+      setIsGenerating(true);
+      try {
+        console.log('🚀 CALLING API with parameters:');
+        console.log('- accessToken length:', user.accessToken.length);
+        console.log('- selectedSummaries:', selectedSummaries);
+        console.log('- owner:', selectedRepository.owner.login);
+        console.log('- repo:', selectedRepository.name);
+        console.log('- framework:', selectedFramework);
+        
+        const response = await apiService.generateMultipleTests(
+          user.accessToken,
+          selectedSummaries,
+          selectedRepository.owner.login,
+          selectedRepository.name,
+          selectedFramework
+        );
+
+        console.log('✅ API RESPONSE RECEIVED:');
+        console.log('📦 Backend response for generateMultipleTests:', response);
+        console.log('- response.results length:', response.results?.length);
+        console.log('- response.errors length:', response.errors?.length);
+        console.log('- First result sample:', response.results?.[0]);
 
       // Transform the backend response to match our frontend interface
       const transformedTests = response.results
         .filter(result => result.success)
-        .map(result => ({
-          fileName: result.testCode.fileName,
-          content: result.testCode.content,
-          framework: result.testCode.framework,
-          sourceFile: result.testCode.sourceFile,
-          testSummary: {
-            id: result.summary.id,
-            title: result.summary.title,
-            description: result.summary.description,
-            type: result.summary.type,
-            file: result.summary.file || result.testCode.sourceFile,
-            priority: result.summary.priority || 'medium',
-            complexity: result.summary.complexity || 'medium',
-            framework: result.testCode.framework,
-            createdAt: result.summary.createdAt || new Date().toISOString()
-          },
-          generatedAt: new Date().toISOString()
-        }));
+        .map((result, index) => {
+          console.log(`Transforming result ${index}:`, result);
+          
+          return {
+            fileName: result.testCode?.fileName || `test-${index + 1}.js`,
+            content: result.testCode?.content || '// Test content not available',
+            framework: result.testCode?.framework || 'jest',
+            sourceFile: result.testCode?.sourceFile || result.summary?.file,
+            testSummary: {
+              id: result.summary?.id || `test-${index + 1}`,
+              title: result.summary?.title || 'Generated Test',
+              description: result.summary?.description || 'AI-generated test case',
+              type: result.summary?.type || 'unit',
+              file: result.summary?.file || result.testCode?.sourceFile,
+              priority: result.summary?.priority || 'medium',
+              complexity: result.summary?.complexity || 'medium',
+              framework: result.testCode?.framework || 'jest',
+              createdAt: result.summary?.createdAt || new Date().toISOString()
+            },
+            generatedAt: new Date().toISOString()
+          };
+        });
+
+      console.log('Transformed tests:', transformedTests);
 
       setGeneratedTests(transformedTests);
       toast.success(`Generated ${transformedTests.length} test files!`);
@@ -99,9 +144,33 @@ const TestCodeView: React.FC = () => {
       if (response.errors.length > 0) {
         toast.error(`${response.errors.length} test(s) failed to generate`);
       }
-    } catch (error) {
-      console.error('Failed to generate test code:', error);
-      toast.error('Failed to generate test code. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Test code generation failed:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to generate test code. Please try again.';
+      
+      if (error?.response?.status === 401) {
+        errorMessage = 'Authentication expired. Please sign in again.';
+      } else if (error?.response?.status === 403) {
+        errorMessage = 'Insufficient permissions. Please check repository access.';
+      } else if (error?.response?.status === 429) {
+        errorMessage = 'Too many requests. Please wait a moment before trying again.';
+      } else if (error?.response?.status >= 500) {
+        errorMessage = 'Server error. Our AI service might be temporarily unavailable.';
+      } else if (error?.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast.error(errorMessage);
+      
+      // Reset to previous step if it's a critical error
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        console.log('🔄 Critical error - redirecting to summaries step');
+        setCurrentStep('summaries');
+      }
     } finally {
       setIsGenerating(false);
     }

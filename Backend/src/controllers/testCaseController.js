@@ -174,7 +174,18 @@ export const generateMultipleTests = asyncHandler(async (req, res) => {
         const detectedFramework = framework || aiService.detectTestingFramework(summary.file, 'react');
         
         // Generate test code
+        console.log(`🤖 Generating test code for: ${summary.title || summary.id}`);
+        console.log(`- Framework: ${detectedFramework}`);
+        console.log(`- Source file: ${summary.file}`);
+        
         const testCode = await aiService.generateTestCode(summary, fileData.content, detectedFramework);
+        
+        console.log(`✅ AI Service returned:`, {
+          fileName: testCode.fileName,
+          contentLength: testCode.content?.length,
+          framework: testCode.framework,
+          hasContent: !!testCode.content
+        });
         
         results.push({
           summary,
@@ -242,11 +253,26 @@ export const createTestPullRequest = asyncHandler(async (req, res) => {
   }
   
   try {
+    console.log('Creating pull request with data:', {
+      owner,
+      repo,
+      testFilesCount: testFiles.length,
+      title: title.substring(0, 50) + '...'
+    });
+
+    // Check repository permissions
+    console.log('Checking repository permissions...');
+    await githubService.checkRepositoryPermissions(accessToken, owner, repo);
+    console.log('Repository permissions verified');
+
     // Generate unique branch name
     const branchName = generateBranchName('ai-generated-tests');
+    console.log('Generated branch name:', branchName);
     
     // Create new branch
+    console.log('Creating branch...');
     await githubService.createBranch(accessToken, owner, repo, branchName);
+    console.log('Branch created successfully');
     
     const createdFiles = [];
     const errors = [];
@@ -289,6 +315,7 @@ export const createTestPullRequest = asyncHandler(async (req, res) => {
     }
     
     // Create pull request
+    console.log('Creating pull request...');
     const prBody = `${description}\n\n## Generated Test Files\n\n` +
       createdFiles.map(file => `- \`${file.path}\``).join('\n') +
       `\n\n## Summary\n- Total files: ${testFiles.length}\n- Successfully created: ${createdFiles.length}\n- Failed: ${errors.length}` +
@@ -302,6 +329,7 @@ export const createTestPullRequest = asyncHandler(async (req, res) => {
       prBody,
       branchName
     );
+    console.log('Pull request created successfully:', pullRequest.number);
     
     res.json({
       success: true,

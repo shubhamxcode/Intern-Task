@@ -55,14 +55,39 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        console.log('🚪 Logging out user - clearing all data...');
+        
+        // Clear authentication data
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
+        sessionStorage.removeItem('github_oauth_state');
+        
+        // Clear app store data (repositories, files, tests, etc.)
+        localStorage.removeItem('app-store');
+        
+        // Clear any other potential auth-related data
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('github')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // Clear session storage
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('token') || key.includes('user') || key.includes('github')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+        
+        // Reset auth state
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           isLoading: false,
         });
+        
+        console.log('✅ Complete logout - all user data cleared');
       },
 
       initializeAuth: async () => {

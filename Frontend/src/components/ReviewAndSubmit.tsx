@@ -3,13 +3,11 @@ import {
   ArrowLeft, 
   GitPullRequest,
   FileText,
-  Code,
+
   CheckCircle,
   AlertCircle,
   ExternalLink,
-  Send,
-  Edit3,
-  Eye
+  
 } from 'lucide-react';
 import { useAuthStore } from '../context/useAuthStore';
 import { useAppStore } from '../context/useAppStore';
@@ -24,14 +22,52 @@ const ReviewAndSubmit: React.FC = () => {
     selectedFiles,
     testSummaries,
     generatedTests,
+    selectedSummaries,
     setCurrentStep,
     reset
   } = useAppStore();
 
   const [isCreatingPR, setIsCreatingPR] = useState(false);
   const [prTitle, setPrTitle] = useState(`Add AI-generated test cases for ${selectedRepository?.name || 'repository'}`);
-  const [prDescription, setPrDescription] = useState(
-    `## 🤖 AI-Generated Test Cases
+  // Generate initial PR description with safety checks
+  const generateInitialDescription = () => {
+    console.log('=== PR DESCRIPTION DEBUG ===');
+    console.log('selectedFiles:', selectedFiles);
+    console.log('generatedTests:', generatedTests);
+    console.log('testSummaries:', testSummaries);
+    console.log('Sample generatedTest:', generatedTests[0]);
+    
+    if (generatedTests.length === 0) {
+      return `## 🤖 AI-Generated Test Cases
+
+This pull request will add comprehensive test cases generated using AI.
+
+### 📊 Test Summary
+- Test files will be generated after selection
+- Please complete the test generation process first
+
+Generated with ❤️ by TestCraft AI`;
+    }
+
+    const frameworks = [...new Set(generatedTests.map(t => t.framework).filter(Boolean))];
+    console.log('Detected frameworks:', frameworks);
+    
+    const testsList = generatedTests.map((test, index) => {
+      console.log(`Processing test ${index}:`, {
+        fileName: test.fileName,
+        testSummary: test.testSummary,
+        hasTitle: !!test.testSummary?.title,
+        hasDescription: !!test.testSummary?.description
+      });
+      
+      const fileName = test.fileName || `test-file-${index + 1}.js`;
+      const title = test.testSummary?.title || test.testSummary?.description || `Test case for ${fileName}`;
+      return `- \`${fileName}\` - ${title}`;
+    }).join('\n');
+    
+    console.log('Generated tests list:', testsList);
+
+    return `## 🤖 AI-Generated Test Cases
 
 This pull request adds comprehensive test cases generated using AI for the following files:
 
@@ -40,10 +76,10 @@ ${selectedFiles.map(file => `- \`${file.path}\``).join('\n')}
 ### 📊 Test Summary
 - **${generatedTests.length}** test files generated
 - **${testSummaries.length}** test scenarios covered
-- **Frameworks**: ${[...new Set(generatedTests.map(t => t.framework))].join(', ')}
+- **Frameworks**: ${frameworks.length > 0 ? frameworks.join(', ') : 'Jest (default)'}
 
 ### 🔍 What's Included
-${generatedTests.map(test => `- \`${test.fileName}\` - ${test.testSummary?.title || 'Test case'}`).join('\n')}
+${testsList}
 
 ### ✅ Benefits
 - Improved code coverage
@@ -51,9 +87,18 @@ ${generatedTests.map(test => `- \`${test.fileName}\` - ${test.testSummary?.title
 - Consistent test patterns and best practices
 - Ready-to-run test suites
 
-Generated with ❤️ by TestCraft AI`
-  );
+Generated with ❤️ by TestCraft AI`;
+  };
+
+  const [prDescription, setPrDescription] = useState(generateInitialDescription());
   const [createdPR, setCreatedPR] = useState<any>(null);
+
+  // Update description when generatedTests changes
+  React.useEffect(() => {
+    if (generatedTests.length > 0) {
+      setPrDescription(generateInitialDescription());
+    }
+  }, [generatedTests, selectedFiles, testSummaries]);
 
   const handleCreatePR = async () => {
     if (!user?.accessToken || !selectedRepository || generatedTests.length === 0) {
@@ -79,9 +124,35 @@ Generated with ❤️ by TestCraft AI`
 
       setCreatedPR(response.pullRequest);
       toast.success('Pull request created successfully!');
-    } catch (error) {
-      console.error('Failed to create pull request:', error);
-      toast.error('Failed to create pull request. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Pull request creation failed:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to create pull request. Please try again.';
+      
+      if (error?.response?.status === 401) {
+        errorMessage = 'Authentication expired. Please sign in again.';
+      } else if (error?.response?.status === 403) {
+        errorMessage = 'Insufficient permissions to create pull request in this repository.';
+      } else if (error?.response?.status === 422) {
+        errorMessage = 'Invalid request. The repository might be archived or branch already exists.';
+      } else if (error?.response?.status === 429) {
+        errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
+      } else if (error?.response?.status >= 500) {
+        errorMessage = 'Server error. GitHub API might be temporarily unavailable.';
+      } else if (error?.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast.error(errorMessage);
+      
+      // Reset to previous step if it's a critical error
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        console.log('🔄 Critical error - redirecting to tests step');
+        setCurrentStep('tests');
+      }
     } finally {
       setIsCreatingPR(false);
     }
@@ -167,6 +238,28 @@ Generated with ❤️ by TestCraft AI`
     );
   }
 
+  // DEBUG: Let's log everything to understand what data we have
+  React.useEffect(() => {
+    console.log('=== REVIEW AND SUBMIT DEBUG ===');
+    console.log('Full store state:');
+    console.log('- selectedRepository:', selectedRepository);
+    console.log('- selectedFiles:', selectedFiles);
+    console.log('- testSummaries:', testSummaries);
+    console.log('- generatedTests:', generatedTests);
+    console.log('- selectedSummaries:', selectedSummaries);
+    
+    if (generatedTests.length > 0) {
+      console.log('First generated test detailed:');
+      const firstTest = generatedTests[0];
+      console.log('- fileName:', firstTest.fileName);
+      console.log('- framework:', firstTest.framework);
+      console.log('- testSummary:', firstTest.testSummary);
+      console.log('- testSummary.title:', firstTest.testSummary?.title);
+      console.log('- testSummary.description:', firstTest.testSummary?.description);
+      console.log('- content length:', firstTest.content?.length);
+    }
+  }, [selectedRepository, selectedFiles, testSummaries, generatedTests, selectedSummaries]);
+
   // Safety check for empty or undefined generatedTests
   if (!generatedTests || generatedTests.length === 0) {
     return (
@@ -235,20 +328,20 @@ Generated with ❤️ by TestCraft AI`
             Generated Test Files ({generatedTests.length})
           </h4>
           <div className="space-y-3 mb-6">
-            {generatedTests.map((test, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FileText className="w-4 h-4 text-blue-500 mr-3" />
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-900">
-                        {test.fileName}
-                      </h5>
-                      <p className="text-xs text-gray-600">
-                        {test.testSummary?.title || 'Test case'}
-                      </p>
-                    </div>
-                  </div>
+                         {generatedTests.map((test, index) => (
+               <div key={index} className="border border-gray-200 rounded-lg p-4">
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center">
+                     <FileText className="w-4 h-4 text-blue-500 mr-3" />
+                     <div>
+                       <h5 className="text-sm font-medium text-gray-900">
+                         {test.fileName || `test-${index + 1}.js`}
+                       </h5>
+                       <p className="text-xs text-gray-600">
+                         {test.testSummary?.title || test.testSummary?.description || 'Test case'}
+                       </p>
+                     </div>
+                   </div>
                   <div className="text-right">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {test.framework}
