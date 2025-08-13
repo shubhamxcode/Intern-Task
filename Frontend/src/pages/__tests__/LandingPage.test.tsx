@@ -32,7 +32,10 @@ vi.mock('../components/magicui/retro-grid', () => ({
 }));
 
 // Mock fetch for backend connectivity test
-global.fetch = vi.fn();
+Object.defineProperty(window, 'fetch', {
+  writable: true,
+  value: vi.fn(),
+});
 
 // Mock window.addEventListener and removeEventListener
 const mockAddEventListener = vi.fn();
@@ -173,7 +176,7 @@ describe('LandingPage Component', () => {
       
       // Get the event handler that was registered
       const eventHandler = mockAddEventListener.mock.calls.find(
-        call => call[0] === 'mousemove'
+        (call: any) => call[0] === 'mousemove'
       )?.[1];
       
       if (eventHandler) {
@@ -195,7 +198,7 @@ describe('LandingPage Component', () => {
       mockLoginWithGitHub.mockRejectedValueOnce(new Error('Login failed'));
       
       // Mock successful backend response
-      (global.fetch as any).mockResolvedValueOnce({
+      (window.fetch as any).mockResolvedValueOnce({
         ok: true,
         status: 200,
       });
@@ -210,7 +213,7 @@ describe('LandingPage Component', () => {
       });
       
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('http://localhost:5000/api/auth/github-url');
+        expect(window.fetch).toHaveBeenCalledWith('http://localhost:5000/api/auth/github-url');
       });
       
       consoleSpy.mockRestore();
@@ -224,7 +227,7 @@ describe('LandingPage Component', () => {
       mockLoginWithGitHub.mockRejectedValueOnce(new Error('Login failed'));
       
       // Mock failed backend response
-      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+      (window.fetch as any).mockRejectedValueOnce(new Error('Network error'));
       
       renderLandingPage();
       
@@ -248,7 +251,7 @@ describe('LandingPage Component', () => {
       mockLoginWithGitHub.mockRejectedValueOnce(new Error('Login failed'));
       
       // Mock backend error response
-      (global.fetch as any).mockResolvedValueOnce({
+      (window.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 500,
       });
@@ -292,7 +295,7 @@ describe('LandingPage Component', () => {
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
       
-      buttons.forEach(button => {
+      buttons.forEach((button: any) => {
         expect(button).toHaveAttribute('type', 'button');
       });
     });
@@ -332,7 +335,7 @@ describe('LandingPage Component', () => {
       renderLandingPage();
       
       const featureCards = screen.getAllByText(/Smart File Selection|Instant Generation|Seamless Integration/);
-      featureCards.forEach(card => {
+      featureCards.forEach((card: any) => {
         const cardElement = card.closest('div');
         expect(cardElement).toHaveClass('group');
         expect(cardElement).toHaveClass('hover:scale-105');
@@ -397,7 +400,7 @@ describe('LandingPage Component', () => {
       renderLandingPage();
       
       const featureCards = screen.getAllByText(/Smart File Selection|Instant Generation|Seamless Integration/);
-      featureCards.forEach(card => {
+      featureCards.forEach((card: any) => {
         const cardElement = card.closest('div');
         expect(cardElement).toHaveClass('transition-all', 'duration-500');
       });

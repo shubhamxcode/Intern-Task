@@ -27,7 +27,7 @@ export const handleApiError = (error: ErrorResponse, context = 'Operation') => {
     errorMessage = 'Invalid request data.';
   } else if (error?.response?.status === 429) {
     errorMessage = 'Too many requests. Please wait a moment before trying again.';
-  } else if (error?.response?.status >= 500) {
+  } else if (error?.response?.status && error.response.status >= 500) {
     errorMessage = 'Server error. Please try again later.';
   } else if (error?.code === 'NETWORK_ERROR') {
     errorMessage = 'Network error. Please check your internet connection.';

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MorphingText } from '../morphing-text';
 
 // Mock requestAnimationFrame and cancelAnimationFrame
@@ -11,8 +11,14 @@ beforeEach(() => {
   vi.clearAllTimers();
   
   // Mock requestAnimationFrame
-  global.requestAnimationFrame = mockRequestAnimationFrame;
-  global.cancelAnimationFrame = mockCancelAnimationFrame;
+  Object.defineProperty(window, 'requestAnimationFrame', {
+    writable: true,
+    value: mockRequestAnimationFrame,
+  });
+  Object.defineProperty(window, 'cancelAnimationFrame', {
+    writable: true,
+    value: mockCancelAnimationFrame,
+  });
 });
 
 afterEach(() => {

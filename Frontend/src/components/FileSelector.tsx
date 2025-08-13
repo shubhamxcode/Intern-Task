@@ -41,7 +41,7 @@ const FileSelector: React.FC = () => {
   } = useAppStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPath, setCurrentPath] = useState('');
+  const [_currentPath, setCurrentPath] = useState('');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
