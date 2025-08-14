@@ -23,14 +23,19 @@ const LandingPage = () => {
       console.error('Login failed:', error);
       // Test backend connectivity
       try {
-        const response = await fetch('http://localhost:5000/api/auth/github-url');
+        // Use environment-aware API URL
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const testUrl = `${apiBaseUrl}/auth/github-url`;
+        
+        const response = await fetch(testUrl);
         console.log('Backend connection test:', response.status);
         if (!response.ok) {
           alert(`Backend error: ${response.status}. Please check if the backend server is running.`);
         }
       } catch (fetchError) {
         console.error('Backend connection failed:', fetchError);
-        alert('Cannot connect to backend server. Please ensure the backend is running on localhost:5000');
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        alert(`Cannot connect to backend server at ${backendUrl}. Please ensure the backend is running.`);
       }
     }
   };

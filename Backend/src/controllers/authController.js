@@ -11,11 +11,13 @@ export const getAuthUrl = asyncHandler(async (req, res) => {
   
   // Validate redirect URI (optional security check)
   const allowedRedirects = [
-    config.frontendUrl,
-    `${config.frontendUrl}/auth/github/callback`
+    ...config.frontendUrls,
+    ...config.frontendUrls.map(url => `${url}/auth/github/callback`)
   ];
   
   if (redirect_uri && !allowedRedirects.includes(redirect_uri)) {
+    console.warn(`🚨 Invalid redirect URI attempted: ${redirect_uri}`);
+    console.warn(`✅ Allowed redirects: ${allowedRedirects.join(', ')}`);
     throw new AppError('Invalid redirect URI', 400);
   }
   

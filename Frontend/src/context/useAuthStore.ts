@@ -149,8 +149,19 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true });
           
-          const redirectUri = import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL || 
-                             `${window.location.origin}/auth/github/callback`;
+          // Dynamic OAuth callback URL based on environment
+          const getCallbackUrl = () => {
+            // If explicitly set in env, use it
+            if (import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL) {
+              return import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL;
+            }
+            
+            // Auto-detect based on current origin
+            const origin = window.location.origin;
+            return `${origin}/auth/github/callback`;
+          };
+          
+          const redirectUri = getCallbackUrl();
           
           // Add timeout for OAuth URL request
           const timeoutPromise = new Promise((_, reject) => 

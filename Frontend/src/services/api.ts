@@ -1,15 +1,67 @@
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
 
+// Dynamic API base URL configuration
+const getApiBaseUrl = (): string => {
+  // Check if API_BASE_URL is explicitly set
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+
+  // Auto-detect environment based on hostname
+  const hostname = window.location.hostname;
+  const isProduction = hostname.includes('vercel.app') || hostname.includes('netlify.app') || hostname.includes('herokuapp.com');
+  
+  if (isProduction) {
+    // Production environment
+    return import.meta.env.VITE_PRODUCTION_BACKEND_URL 
+      ? `${import.meta.env.VITE_PRODUCTION_BACKEND_URL}/api`
+      : 'https://intern-task-65q2.onrender.com/api';
+  } else {
+    // Development environment
+    return import.meta.env.VITE_LOCAL_BACKEND_URL 
+      ? `${import.meta.env.VITE_LOCAL_BACKEND_URL}/api`
+      : 'http://localhost:5000/api';
+  }
+};
+
 // API base configuration with validation
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = getApiBaseUrl();
+
+// Environment-specific configurations
+const isDevelopment = import.meta.env.DEV;
+const isProduction = import.meta.env.PROD;
+
+// Enhanced environment detection
+const getCurrentEnvironment = () => {
+  const hostname = window.location.hostname;
+  if (hostname.includes('vercel.app')) return 'vercel-production';
+  if (hostname.includes('netlify.app')) return 'netlify-production';
+  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) return 'localhost-development';
+  return 'unknown';
+};
 
 // Validate environment variables
-if (import.meta.env.DEV) {
-  console.log('API Configuration:', {
+if (isDevelopment) {
+  console.log('🔧 API Configuration:', {
     baseUrl: API_BASE_URL,
     callbackUrl: import.meta.env.VITE_GITHUB_OAUTH_CALLBACK_URL,
-    environment: import.meta.env.MODE
+    environment: import.meta.env.MODE,
+    detectedEnvironment: getCurrentEnvironment(),
+    hostname: window.location.hostname,
+    productionBackend: import.meta.env.VITE_PRODUCTION_BACKEND_URL,
+    productionFrontend: import.meta.env.VITE_PRODUCTION_FRONTEND_URL,
+    localBackend: import.meta.env.VITE_LOCAL_BACKEND_URL,
+    localFrontend: import.meta.env.VITE_LOCAL_FRONTEND_URL
+  });
+}
+
+// Production environment check
+if (isProduction) {
+  console.log('🚀 Production Environment:', {
+    baseUrl: API_BASE_URL,
+    environment: import.meta.env.MODE,
+    detectedEnvironment: getCurrentEnvironment()
   });
 }
 
@@ -19,13 +71,42 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: API_BASE_URL,
-      timeout: 30000,
+      timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
     this.setupInterceptors();
+    
+    // Debug API configuration in development
+    if (isDevelopment) {
+      this.debugApiConfiguration();
+    }
+  }
+
+  private debugApiConfiguration() {
+    console.log('🔧 API Service Configuration:', {
+      baseURL: this.api.defaults.baseURL,
+      timeout: this.api.defaults.timeout,
+      environment: getCurrentEnvironment(),
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Test connectivity to the backend
+  async testConnectivity(): Promise<{ success: boolean; status?: number; error?: string }> {
+    try {
+      const response = await this.api.get('/health');
+      return { success: true, status: response.status };
+    } catch (error: any) {
+      console.error('❌ Backend connectivity test failed:', error);
+      return { 
+        success: false, 
+        status: error.response?.status,
+        error: error.message || 'Connection failed'
+      };
+    }
   }
 
   private setupInterceptors() {
